@@ -1,58 +1,60 @@
 #pragma once
 #include <algorithm>
 #include <vector>
+#include <list>
 #include <string>
 #include <type_traits>
+#include <iostream>
+#include <exception>
 ////////////////
 // Tile
 ////////////////
  
-enum class TileCode {
-    TILE_1M, TILE_2M, TILE_3M, TILE_4M, TILE_5M, TILE_6M, TILE_7M, TILE_8M, TILE_9M,
-    TILE_1P, TILE_2P, TILE_3P, TILE_4P, TILE_5P, TILE_6P, TILE_7P, TILE_8P, TILE_9P,
-    TILE_1S, TILE_2S, TILE_3S, TILE_4S, TILE_5S, TILE_6S, TILE_7S, TILE_8S, TILE_9S,
-    TILE_DONG, TILE_NAN, TILE_XI, TILE_BEI, TILE_ZHONG, TILE_FA, TILE_BAI,
-    TILE_EMPTY,
-};
 
-enum class TileSuit {
-    WAN, TONG, SUO, ZI
-};
-
-std::string TileName[34] = {
-    "一", "二", "三", "四", "五", "六", "七", "八", "九",
-    "1", "2", "3", "4", "5", "6", "7", "8", "9",
-    "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨",
-    "东", "南", "西", "北", "中", "发", "白",
-};
 
 class Tile {
+public:
+    enum class TileSuit {
+        WAN, TONG, SUO, ZI, INVALID
+    };
+
 private:
-    TileCode tileCode;
+    int num;
+
+    TileSuit suit;
 
 public:
-    Tile() : tileCode(TileCode::TILE_EMPTY) {
-
+    Tile() {
+        this->num = 0;
+        this->suit = TileSuit::INVALID;
     }
 
-    Tile(TileCode code) : tileCode(code) {
-
+    Tile(int num, TileSuit suit) {
+        this->num = num;
+        this->suit = suit;
     }
 
-    Tile(const Tile& t) : tileCode(t.getTileCode()) {
+    Tile(int num, char suit) {
+        this->num = num;
+        switch (suit) {
+        case 'm': this->suit = TileSuit::WAN; break;
+        case 'p': this->suit = TileSuit::TONG; break;
+        case 's': this->suit = TileSuit::SUO; break;
+        case 'z': this->suit = TileSuit::ZI; break;
+        default: this->suit = TileSuit::INVALID; break;
+        }
+    }
+
+    Tile(const Tile& t) : num(t.getNum()), suit(t.getSuit()) {
 
     }
 
     inline int getNum() const {
-        return getSuit() == TileSuit::ZI ? 0 : (int)tileCode % 9 + 1;
+        return num;
     }
 
     inline TileSuit getSuit() const {
-        return (TileSuit)((int)tileCode / 9);
-    }
-
-    inline TileCode getTileCode() const {
-        return tileCode;
+        return suit;
     }
 
     int operator- (const Tile& a) const {
@@ -66,47 +68,78 @@ public:
 
     Tile operator+ (int i) const {
         if (getSuit() == TileSuit::ZI || getNum() == 9) {
-            return Tile(TileCode::TILE_EMPTY);
+            return Tile();
         }
         else {
-            return Tile(TileCode((int)getTileCode() + 1));
+            return Tile(this->getNum() + i, this->getSuit());
         }
     }
 
     Tile operator- (int i) const {
         if (getSuit() == TileSuit::ZI || getNum() == 1) {
-            return Tile(TileCode::TILE_EMPTY);
+            return Tile();
         }
         else {
-            return Tile(TileCode((int)getTileCode() + 1));
+            return Tile(this->getNum() - i, this->getSuit());
         }
+    }
+
+    operator bool() const {
+        return getSuit() != TileSuit::INVALID && getNum() >= 0 && getNum() <= 9;
     }
 
     bool operator== (const Tile& a) const {
-        return getTileCode() == a.getTileCode();
+        return getNum() == a.getNum() && getSuit() == a.getSuit();
     }
 
     bool operator!= (const Tile& a) const {
-        return getTileCode() != a.getTileCode();
-    }
-
-    bool operator== (TileCode code) const {
-        return getTileCode() == code;
-    }
-
-    bool operator != (TileCode code) const {
-        return getTileCode() != code;
+        return !operator==(a);
     }
 
     bool operator> (const Tile& a) const {
-        return a.getTileCode() > a.getTileCode();
+        return (int)getSuit() * 10 + getNum() > (int)a.getSuit() * 10 + a.getNum();
     }
 
     bool operator< (const Tile& a) const {
-        return a.getTileCode() < a.getTileCode();
+        return !operator==(a) && !operator>(a);
     }
+
+    int distance(const Tile& a) const {
+        return abs(operator-(a));
+    }
+
+    std::string toString() const {
+        if (this->getSuit() == TileSuit::INVALID) {
+            return "";
+        }
+        std::string str("00");
+        str[0] = '0' + this->getNum();
+        if (this->getSuit() == TileSuit::WAN) {
+            str[1] = 'm';
+        }
+        else if (this->getSuit() == TileSuit::SUO) {
+            str[1] = 's';
+        }
+        else if (this->getSuit() == TileSuit::TONG) {
+            str[1] = 'p';
+        }
+        else if (this->getSuit() == TileSuit::ZI) {
+            str[1] = 'z';
+        }
+        else {
+            str[1] = '-';
+        }
+        return str;
+    }
+
+    friend std::ostream& operator<< (std::ostream& stream, const Tile& tile);
 };
 
+std::ostream& operator<< (std::ostream& stream, const Tile& tile) {
+
+    stream << tile.toString();
+    return stream;
+}
 
 ///////////////
 //Group
@@ -123,10 +156,43 @@ private:
     GroupType type = GroupType::EMPTY;
 
 public:
+    Group() {
+        tiles[0] = Tile();
+        tiles[1] = Tile();
+        tiles[2] = Tile();
+    }
+
+    Group(const Tile& t1) {
+        tiles[0] = t1;
+        tiles[1] = Tile();
+        tiles[2] = Tile();
+        setType();
+    }
+
+    Group(const Tile& t1, const Tile& t2) {
+        tiles[0] = t1;
+        tiles[1] = t2;
+        tiles[2] = Tile();
+        setType();
+    }
+
+    Group(const Tile& t1, const Tile& t2, const Tile& t3) {
+        tiles[0] = t1;
+        tiles[1] = t2;
+        tiles[2] = t3;
+        setType();
+    }
+
+    Group(const Group& group) {
+        for (int i = 0; i < 3; i++) {
+            tiles[i] = group.tiles[i];
+        }
+    }
+
     inline int count() const {
         int count = 0;
         for (int i = 0; i < 3; i++) {
-            if (tiles[0] != TileCode::TILE_EMPTY) {
+            if (tiles[i]) {
                 count++;
             }
         }
@@ -152,12 +218,50 @@ public:
         }
     }
 
-    bool add(Tile& t) {
+    void add(Tile& t) {
         tiles[count()] = t;
         sort();
     }
 
-    bool tryAdd(Tile& t) {
+    void setType() {
+        sort();
+        if (count() == 0) {
+            type = GroupType::EMPTY;
+        }
+        else if (count() == 1) {
+            type = GroupType::SINGLE;
+        }
+        else if (count() == 2) {
+            if (tiles[1] == tiles[0]) {
+                type = GroupType::PAIR;
+            }
+            else if (tiles[1].distance(tiles[0]) <= 2) {
+                type = GroupType::SHUN;
+            }
+            else {
+                type = GroupType::EMPTY;
+            }
+        }
+        else if (count() == 3) {
+            if (tiles[1] == tiles[0] && tiles[2] == tiles[1]) {
+                type = GroupType::KE;
+            }
+            else if (tiles[2] - tiles[1] == 1 && tiles[1] - tiles[0] == 1) {
+                type = GroupType::SHUN;
+            }
+            else {
+                type = GroupType::EMPTY;
+            }
+        }
+        else {
+            type = GroupType::EMPTY;
+        }
+    }
+
+    bool combine(Tile& t) {
+        if (!t) {
+            return false;
+        }
         if (count() == 0) {
             add(t);
             type = GroupType::SINGLE;
@@ -204,17 +308,90 @@ public:
         }
     }
 
-    void remove(Tile& t) {
+    bool checkCombine(Group& other) {
+        if (count() + other.count() > 3) {
+            return false;
+        }
+        Group g(*this);
+        for (int i = 0; i < other.count(); i++) {
+            g.add(other[i]);
+        }
+        g.setType();
+        return g.type != GroupType::EMPTY;
+    }
+     
+    bool contain(const Tile& t) {
+        for (int i = 0; i < 3; i++) {
+            if (tiles[i] == t) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void remove(const Tile& t) {
         for (int i = 2; i >= 0; i--) {
             if (tiles[i] == t) {
-                tiles[i] = TileCode::TILE_EMPTY;
+                tiles[i] = Tile();
             }
         }
         sort();
     }
 
+    std::string toString() {
 
+    }
+
+    friend std::ostream& operator<< (std::ostream& stream, const Group& group);
+
+    Tile& operator[] (int index) {
+        return tiles[index];
+    }
+
+    const Tile& operator[] (int index) const {
+        return tiles[index];
+    }
 };
+
+
+std::ostream& operator<< (std::ostream& stream, const Group& group) {
+    for (int i = 0; i < 3; i++) {
+        stream << group[i];
+    }
+    return stream;
+}
+
+bool checkGroup(const Tile& t1, const Tile& t2) {
+    int dist = abs(t1 - t2);
+    if (dist == 0) {
+        return true;
+    }
+    else if (dist <= 2) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+bool checkGroup(const Tile& t1, const Tile& t2, const Tile& t3) {
+    if (t1 == t2 && t2 == t3) {
+        return true;
+    }
+    else {
+        Tile tiles[3];
+        tiles[0] = t1;
+        tiles[1] = t2;
+        tiles[2] = t3;
+        std::sort(tiles, tiles + 3);
+        if (tiles[1] - tiles[0] == 1 && tiles[2] - tiles[1] == 1) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+}
 
 ///////////////
 //Hand
@@ -222,41 +399,169 @@ public:
 
 class Hand {
 private:
-    Tile tiles[14];
+    std::vector<Group> groups;
+
+    std::vector<Tile> tiles;
 
 public:
-    Hand(Tile* input_tiles) {
-        for (int i = 0; i < 14; i++) {
-            tiles[i] = input_tiles[i];
-        }
+    Hand(std::vector<Tile> tiles) : tiles(tiles) {
     }
     
     void sort() {
-        std::sort(tiles, tiles+14);
+        std::sort(tiles.begin(), tiles.end());
     }
 
-    Tile getTile(int index) {
+    Tile& operator[] (int index) {
         return tiles[index];
     }
 
-    int countXiangting() {
-        std::vector<Group> groups;
-        for (int i = 0; i < 14; i++) {
-            for (auto it = groups.begin(); it != groups.end(); it++) {
-                if (!it->tryAdd(tiles[i])) {
-                    Group group;
-                    group.tryAdd(tiles[i]);
-                    groups.push_back(group);
+    const Tile& operator[] (int index) const {
+        return tiles[index];
+    }
+
+
+    std::vector<Hand> split(bool completeGroupOnly) {
+        sort();
+        std::vector<Hand> hands;
+        std::vector<Hand> complete;
+        hands.emplace_back(this->tiles);
+
+        while (!hands.empty()) {
+            for (auto h : hands) {
+                std::cout << h << '\n';
+            }
+            std::cout << "---" << std::endl;
+
+            Hand base = hands.back();
+            hands.pop_back();
+
+            // if a hand contains 2 groups that can be combined together, then pass
+            if (base.groups.size() >= 2) {
+                bool canCombine = false;
+                for (auto it = base.groups.begin(); it != base.groups.end() - 1; it++) {
+                    if (base.groups.back().checkCombine(*it)) {
+                        canCombine = true;
+                        break;
+                    }
+                }
+                if (canCombine) {
+                    continue;
                 }
             }
 
+            if (base.tiles.empty()) {
+                complete.push_back(base);
+                continue;
+            }
+
+            Tile first = base[0];
+            base.tiles.erase(base.tiles.begin());
+
+            // find KE and PAIR
+            if (base.tiles.size() >= 1 && base[0] == first) {
+                Hand newhand(base);
+                Group group(first, base[0]);
+                newhand.groups.push_back(group);
+                newhand.tiles.erase(newhand.tiles.begin());
+                hands.push_back(newhand);
+                if (base.tiles.size() >= 2 && base[1] == first) {
+                    Hand newhand3(newhand);
+                    newhand3.groups.back().add(newhand[0]);
+                    newhand3.tiles.erase(newhand3.tiles.begin());
+                    hands.push_back(newhand3);
+                }
+            }
+
+            // find SHUN
+            bool have2 = false;
+            for (size_t i = 0; i < base.tiles.size(); i++) {
+                if (base[i] == first) {
+                    continue;
+                }
+                if (base[i] - first == 1 && !have2) {
+                    Hand newhand(base);
+                    Group group(first, base[i]);
+                    newhand.groups.push_back(group);
+                    newhand.tiles.erase(newhand.tiles.begin() + i);
+                    if (!completeGroupOnly) {
+                        hands.push_back(newhand);
+                    }
+                    for (size_t j = 0; j < newhand.tiles.size(); j++) {
+                        if (newhand.tiles[j] - first <= 1) {
+                            continue;
+                        }
+                        if (newhand[j] - first == 2) {
+                            Hand newhand3(newhand);
+                            newhand3.groups.back().add(newhand.tiles[j]);
+                            newhand3.tiles.erase(newhand3.tiles.begin() + j);
+                            hands.push_back(newhand3);
+                            break;
+                        }
+                    }
+                    break;
+                }
+                if (base[i] - first == 2 && !have2 && !completeGroupOnly) {
+                    Hand newhand(base);
+                    Group group(first, base[i]);
+                    newhand.groups.push_back(group);
+                    newhand.tiles.erase(newhand.tiles.begin() + i);
+                    hands.push_back(newhand);
+                }
+                if (base[i] - first > 2) {
+                    break;
+                }
+            }
+
+            // always add SINGLE group
+            if (!completeGroupOnly) {
+                Hand newhand(base);
+                Group group(first);
+                newhand.groups.push_back(group);
+                hands.push_back(newhand);
+            }
+        }
+        return complete;
+    }
+
+    
+
+    void checkClaim() {
+
+    }
+
+    friend std::ostream& operator<< (std::ostream& stream, const Hand& hand);
+};
+
+std::ostream& operator<< (std::ostream& stream, const Hand& hand) {
+    for (const Tile& t : hand.tiles) {
+        stream << t;
+    }
+    stream << ' ';
+    for (const Group& g : hand.groups) {
+        stream << g << ' ';
+    }
+    return stream;
+}
+
+Hand parseHand(std::string str) {
+    std::vector<Tile> tiles;
+    int k = 0;
+    for (size_t i = 0; i < str.size(); i++) {
+        if (str[i] == 'm' || str[i] == 's' || str[i] == 'p' || str[i] == 'z') {
+            for (int j = k; j < i; j++) {
+                int num = str[j] - '0';
+                if (num >= 0 && num <= 9) {
+                    tiles.push_back(Tile(str[j] - '0', str[i]));
+                }
+                else {
+                    throw std::invalid_argument("invalid expression");
+                }
+            }
+            k = i + 1;
         }
     }
-
-    void checkChi() {
-
-    }
-};
+    return Hand(tiles);
+}
 
 ///////////////
 //Algorithm
