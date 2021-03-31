@@ -1,13 +1,13 @@
 #pragma once
+
 #include <algorithm>
 #include <vector>
 #include <list>
 #include <string>
-#include <type_traits>
 #include <iostream>
 #include <exception>
 #include <time.h>
-#include <unordered_map>
+#include <map>
 
 ////////////////
 //Math
@@ -426,7 +426,9 @@ public:
         bool havePair = false;
         int xt = 8;
         int m = 0, d = 0, p = 0;
+        int tileCount = 0;
         for (auto it = groups.begin(); it != groups.end(); it++) {
+            tileCount += it->count();
             if (it->isComplete()) {
                 m++;
             }
@@ -437,14 +439,15 @@ public:
                 d++;
             }
         }
+        m += (14 - tileCount) / 3;
         int v = p == 0 ? min(4 - m, d) : min(5 - m, d + p);
         return 8 - 2 * m - v;
     }
 
-    std::unordered_map<Tile, std::vector<Tile>> cutAnalyze() {
+    std::map<Tile, std::vector<Tile>> cutAnalyze() {
         Hand base(*this);
         int currentXt = base.getXt();
-        std::unordered_map<Tile, std::vector<Tile>> map;
+        std::map<Tile, std::vector<Tile>> map;
         for (int i = 0; i < base.tiles.size(); i++) {
             Tile cut = base[i];
             if (map.find(cut) != map.end()) {
@@ -461,7 +464,7 @@ public:
                 }
             }
             if (!progress.empty()) {
-                map.insert(std::pair<Tile, std::vector<Tile>> {cut, progress});
+                map.insert(std::pair<Tile, std::vector<Tile>> (cut, progress));
             }
             base[i] = cut;
         }

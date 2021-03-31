@@ -140,9 +140,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="mahjong.h" />
+    <ClInclude Include="pymj.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="pymj_core.i" />
+    <None Include="setup.py" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

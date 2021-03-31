@@ -1,4 +1,5 @@
 #include <iostream>
+#include "pymj.h"
 #include "mahjong.h"
 
 int main() {
@@ -12,10 +13,10 @@ int main() {
     //    std::cout << h << " " << h.groupXt() << '\n';
     //}
     std::cout << hands.back().groupXt() << "Ïò" << '\n';
-    auto analyze = hand.cutAnalyze();
+    auto analyze = cutAnalyze(s);
     for (auto it = analyze.begin(); it != analyze.end(); it++) {
         std::cout << it->first << " ";
-        std::cout << show(it->second) << '\n';
+        std::cout << it->second << '\n';
     }
     return 0;
 }

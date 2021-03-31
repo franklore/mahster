@@ -18,10 +18,21 @@
     <ClInclude Include="mahjong.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="pymj.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="setup.py">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="pymj_core.i">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
 </Project>
