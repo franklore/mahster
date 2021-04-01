@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.30517.126
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mahster", "mahster\mahster.vcxproj", "{98AB8172-5921-46DD-8561-790B5B57D202}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UnitTestMahjong", "UnitTestMahjong\UnitTestMahjong.vcxproj", "{4DD7A2B4-2F86-4D85-8FB8-249C7F685498}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{98AB8172-5921-46DD-8561-790B5B57D202}.Release|x64.Build.0 = Release|x64
 		{98AB8172-5921-46DD-8561-790B5B57D202}.Release|x86.ActiveCfg = Release|Win32
 		{98AB8172-5921-46DD-8561-790B5B57D202}.Release|x86.Build.0 = Release|Win32
+		{4DD7A2B4-2F86-4D85-8FB8-249C7F685498}.Debug|x64.ActiveCfg = Debug|x64
+		{4DD7A2B4-2F86-4D85-8FB8-249C7F685498}.Debug|x64.Build.0 = Debug|x64
+		{4DD7A2B4-2F86-4D85-8FB8-249C7F685498}.Debug|x86.ActiveCfg = Debug|Win32
+		{4DD7A2B4-2F86-4D85-8FB8-249C7F685498}.Debug|x86.Build.0 = Debug|Win32
+		{4DD7A2B4-2F86-4D85-8FB8-249C7F685498}.Release|x64.ActiveCfg = Release|x64
+		{4DD7A2B4-2F86-4D85-8FB8-249C7F685498}.Release|x64.Build.0 = Release|x64
+		{4DD7A2B4-2F86-4D85-8FB8-249C7F685498}.Release|x86.ActiveCfg = Release|Win32
+		{4DD7A2B4-2F86-4D85-8FB8-249C7F685498}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

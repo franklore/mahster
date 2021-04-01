@@ -9,7 +9,7 @@
 #include <time.h>
 #include <map>
 
-////////////////
+///////////////
 //Math
 ///////////////
 inline int min(int a, int b) {
@@ -20,10 +20,11 @@ inline int max(int a, int b) {
     return a > b ? a : b;
 }
 
-
 ////////////////
 // Tile
 ////////////////
+
+const int totalTileNumber = 136;
 
 class Tile {
 public:
@@ -56,6 +57,12 @@ public:
         case 'z': this->suit = TileSuit::ZI; break;
         default: this->suit = TileSuit::INVALID; break;
         }
+    }
+
+    Tile(int code) {
+        this->num = code % 9 + 1;
+        this->suit = (TileSuit)(code / 9);
+        
     }
 
     Tile(const Tile& t) : num(t.getNum()), suit(t.getSuit()) {
@@ -100,6 +107,9 @@ public:
         if (getSuit() != a.getSuit()) {
             return 9;
         }
+        else if (getSuit() == TileSuit::ZI) {
+            return getNum() == a.getNum() ? 0 : 9;
+        }
         else {
             return getNum() - a.getNum();
         }
@@ -125,6 +135,10 @@ public:
 
     operator bool() const {
         return getSuit() != TileSuit::INVALID && getNum() >= 0 && getNum() <= 9;
+    }
+
+    operator std::string() const {
+        return toString();
     }
 
     bool operator== (const Tile& a) const {
@@ -174,6 +188,27 @@ namespace std {
     };
 }
 
+
+
+std::vector<Tile> randomTile(int count) {
+    srand(time(0));
+    int* nums = new int[totalTileNumber];
+    for (int i = 0; i < totalTileNumber; i++) {
+        nums[i] = i;
+    }
+    std::vector<Tile> val;
+    int v = 0, temp = 0;
+    for (int i = 0; i < count; i++) {
+        v = rand() % totalTileNumber;
+        temp = nums[v];
+        nums[v] = nums[i];
+        nums[i] = temp;
+        val.push_back(temp / 4);
+    }
+    delete[] nums;
+    return val;
+}
+
 ///////////////
 //Group
 ///////////////
@@ -182,7 +217,7 @@ enum class GroupType {
 };
 
 
-class Group {
+class Group { 
 private:
     Tile tiles[3];
 
@@ -240,6 +275,16 @@ public:
         return count;
     }
 
+    inline bool gang() {
+        if (type == GroupType::KE) {
+            type = GroupType::GANG;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
     void sort() {
         Tile temp;
         if (tiles[0] > tiles[1]) {
@@ -289,6 +334,7 @@ public:
         for (int i = 2; i >= 0; i--) {
             if (tiles[i] == t) {
                 tiles[i] = Tile();
+                break;
             }
         }
         sort();
@@ -364,37 +410,31 @@ std::ostream& operator<< (std::ostream& stream, const Group& group) {
         return stream;
 }
 
-bool checkGroup(const Tile& t1, const Tile& t2) {
-    int dist = abs(t1 - t2);
-    if (dist == 0) {
-        return true;
+int groupXt(std::vector<Group> groups, bool strict = false) {
+    bool havePair = false;
+    int xt = 8;
+    int m = 0, d = 0, p = 0;
+    int tileCount = 0;
+    for (auto it = groups.begin(); it != groups.end(); it++) {
+        tileCount += it->count();
+        if (it->isComplete()) {
+            m++;
+        }
+        else if (it->getType() == GroupType::PAIR) {
+            p++;
+        }
+        else if (it->getType() == GroupType::DA) {
+            d++;
+        }
     }
-    else if (dist <= 2) {
-        return true;
+    if (!strict) {
+        m += (14 - tileCount) / 3;
     }
-    else {
-        return false;
-    }
+
+    int v = p == 0 ? min(4 - m, d) : min(5 - m, d + p);
+    return 8 - 2 * m - v;
 }
 
-bool checkGroup(const Tile& t1, const Tile& t2, const Tile& t3) {
-    if (t1 == t2 && t2 == t3) {
-        return true;
-    }
-    else {
-        Tile tiles[3];
-        tiles[0] = t1;
-        tiles[1] = t2;
-        tiles[2] = t3;
-        std::sort(tiles, tiles + 3);
-        if (tiles[1] - tiles[0] == 1 && tiles[2] - tiles[1] == 1) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-}
 
 ///////////////
 //Hand
@@ -422,58 +462,47 @@ public:
         return tiles[index];
     }
 
-    int groupXt() {
-        bool havePair = false;
-        int xt = 8;
-        int m = 0, d = 0, p = 0;
-        int tileCount = 0;
-        for (auto it = groups.begin(); it != groups.end(); it++) {
-            tileCount += it->count();
-            if (it->isComplete()) {
-                m++;
-            }
-            else if (it->getType() == GroupType::PAIR) {
-                p++;
-            }
-            else if (it->getType() == GroupType::DA) {
-                d++;
-            }
-        }
-        m += (14 - tileCount) / 3;
-        int v = p == 0 ? min(4 - m, d) : min(5 - m, d + p);
-        return 8 - 2 * m - v;
-    }
-
     std::map<Tile, std::vector<Tile>> cutAnalyze() {
         Hand base(*this);
         int currentXt = base.getXt();
         std::map<Tile, std::vector<Tile>> map;
-        for (int i = 0; i < base.tiles.size(); i++) {
-            Tile cut = base[i];
-            if (map.find(cut) != map.end()) {
-                continue;
+
+        if (base.tiles.size() % 3 == 2) {
+            for (int i = 0; i < base.tiles.size(); i++) {
+                Tile cut = base[i];
+                if (map.find(cut) != map.end()) {
+                    continue;
+                }
+                std::vector<Tile> progress;
+                for (int ti = 0; ti < 34; ti++) {
+                    Tile t(ti);
+                    base[i] = t;
+                    if (base.getXt() < currentXt) {
+                        progress.push_back(t);
+                    }
+                }
+                if (!progress.empty()) {
+                    map.insert(std::pair<Tile, std::vector<Tile>>(cut, progress));
+                }
+                base[i] = cut;
             }
+        }
+        else if (base.tiles.size() % 3 == 1) {
             std::vector<Tile> progress;
             for (int ti = 0; ti < 34; ti++) {
-                int num = ti % 9 + 1;
-                int suit = ti / 9;
-                Tile t(num, (Tile::TileSuit)suit);
-                base[i] = t;
+                Tile t(ti);
+                base.tiles.push_back(t);
                 if (base.getXt() < currentXt) {
                     progress.push_back(t);
                 }
             }
-            if (!progress.empty()) {
-                map.insert(std::pair<Tile, std::vector<Tile>> (cut, progress));
-            }
-            base[i] = cut;
+            map.insert(std::pair<Tile, std::vector<Tile>>(Tile(), progress));
         }
         return map;
     }
 
     int getXt() {
-        std::vector<Hand> splits = split();
-        return splits.back().groupXt();
+        return groupXt(split().back().groups);
     }
 
     std::vector<Hand> split() const {
@@ -486,17 +515,11 @@ public:
         int minXt = 8;
         int c = 0;
         while (!hands.empty()) {
-            //std::cout << c++ << std::endl;
-            //for (auto h : hands) {
-            //    std::cout << h << '\n';
-            //}
-            //std::cout << "---" << std::endl;
-
             Hand base = hands.back();
             hands.pop_back();
 
             // if a hand's xiangting is no less than minXt, then pass
-            int minProbablyXtOfBase = base.groupXt() - (base.tiles.size() / 3) * 2 - base.tiles.size() % 3 == 2 ? 1 : 0;
+            int minProbablyXtOfBase = groupXt(base.groups, true) - (base.tiles.size() / 3) * 2 - base.tiles.size() % 3 == 2 ? 1 : 0;
             if (minProbablyXtOfBase > minXt) {
                 continue;
             }
@@ -516,7 +539,7 @@ public:
             }
 
             if (base.tiles.empty()) {
-                int baseXt = base.groupXt();
+                int baseXt = groupXt(base.groups);
                 if (baseXt > minXt) {
                     continue;
                 }
@@ -543,44 +566,42 @@ public:
             hands.push_back(newhand);
 
             // find SHUN
-            if (first.getSuit() == Tile::TileSuit::ZI) {
-                continue;
-            }
-
-            bool have2 = false;
-            for (size_t i = 0; i < base.tiles.size(); i++) {
-                if (base[i] == first) {
-                    continue;
-                }
-                if (base[i] - first == 1 && !have2) {
-                    Hand newhand(base);
-                    Group group(first, base[i]);
-                    newhand.groups.push_back(group);
-                    newhand.tiles.erase(newhand.tiles.begin() + i);
-                    hands.push_back(newhand);
-                    for (size_t j = 0; j < newhand.tiles.size(); j++) {
-                        if (newhand.tiles[j] - first <= 1) {
-                            continue;
-                        }
-                        if (newhand[j] - first == 2) {
-                            Hand newhand3(newhand);
-                            newhand3.groups.back().add(newhand.tiles[j]);
-                            newhand3.tiles.erase(newhand3.tiles.begin() + j);
-                            hands.push_back(newhand3);
-                            break;
-                        }
+            if (first.getSuit() != Tile::TileSuit::ZI) {
+                bool have2 = false;
+                for (size_t i = 0; i < base.tiles.size(); i++) {
+                    if (base[i] == first) {
+                        continue;
                     }
-                    break;
-                }
-                if (base[i] - first == 2 && !have2) {
-                    Hand newhand(base);
-                    Group group(first, base[i]);
-                    newhand.groups.push_back(group);
-                    newhand.tiles.erase(newhand.tiles.begin() + i);
-                    hands.push_back(newhand);
-                }
-                if (base[i] - first > 2) {
-                    break;
+                    if (base[i] - first == 1 && !have2) {
+                        Hand newhand(base);
+                        Group group(first, base[i]);
+                        newhand.groups.push_back(group);
+                        newhand.tiles.erase(newhand.tiles.begin() + i);
+                        hands.push_back(newhand);
+                        for (size_t j = 0; j < newhand.tiles.size(); j++) {
+                            if (newhand.tiles[j] - first <= 1) {
+                                continue;
+                            }
+                            if (newhand[j] - first == 2) {
+                                Hand newhand3(newhand);
+                                newhand3.groups.back().add(newhand.tiles[j]);
+                                newhand3.tiles.erase(newhand3.tiles.begin() + j);
+                                hands.push_back(newhand3);
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    if (base[i] - first == 2 && !have2) {
+                        Hand newhand(base);
+                        Group group(first, base[i]);
+                        newhand.groups.push_back(group);
+                        newhand.tiles.erase(newhand.tiles.begin() + i);
+                        hands.push_back(newhand);
+                    }
+                    if (base[i] - first > 2) {
+                        break;
+                    }
                 }
             }
 
@@ -605,11 +626,10 @@ public:
     friend std::ostream& operator<< (std::ostream& stream, const Hand& hand);
 };
 
+std::string display(std::vector<Tile> tiles);
+
 std::ostream& operator<< (std::ostream& stream, const Hand& hand) {
-    for (const Tile& t : hand.tiles) {
-        stream << t;
-    }
-    stream << ' ';
+    stream << display(hand.tiles) << ' ';
     for (const Group& g : hand.groups) {
         stream << g << ' ';
     }
@@ -636,7 +656,7 @@ Hand parseHand(std::string str) {
     return Hand(tiles);
 }
 
-std::string show(std::vector<Tile> tiles) {
+std::string display(std::vector<Tile> tiles) {
     std::vector<char> str;
     if (tiles.empty()) {
         return "";
@@ -654,7 +674,3 @@ std::string show(std::vector<Tile> tiles) {
     str.push_back(tiles.back().getSuitChar());
     return std::string(str.begin(), str.end());
 }
-
-///////////////
-//Algorithm
-///////////////
